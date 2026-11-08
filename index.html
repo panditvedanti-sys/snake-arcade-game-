@@ -35,179 +35,186 @@
     <body>
         <div id="terminal"></div>
         <div id="scoreboard">Score: 0 [Controls: W/A/S/D or Arrows]</div>
-        <script>
-            window.focus();
-            const WIDTH = 20;
-            const HEIGHT = 10;
-            const WALL_CHAR = '#';
-            const SNAKE_HEAD_CHAR = 'O';
-            const SNAKE_BODY_CHAR = 'o';
-            const FOOD_CHAR = '*';
-            const EMPTY_CHAR = ' ';
+       <script>
+    window.focus();
+    const WIDTH = 20;
+    const HEIGHT = 10;
+    const WALL_CHAR = '#';
+    const SNAKE_HEAD_CHAR = 'O';
+    const SNAKE_BODY_CHAR = 'o';
+    const FOOD_CHAR = '*';
+    const EMPTY_CHAR = ' ';
 
-            class Point {
-                constructor(x, y) {
-                    this.x = x;
-                    this.y = y;
-                }
-                equals(other) {
-                    return other && this.x === other.x && this.y === other.y;
+    class Point {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+        }
+        equals(other) {
+            return other && this.x === other.x && this.y === other.y;
+        }
+    }
+
+    class Snake {
+        constructor(body, dirX, dirY) {
+            this.body = body;
+            this.dirX = dirX;
+            this.dirY = dirY;
+        }
+
+        getHead() {
+            return this.body[0];
+        }
+
+        changeDirection(newDirX, newDirY) {
+            if (this.dirX !== 0 && newDirX === 0) {
+                this.dirX = newDirX;
+                this.dirY = newDirY;
+            } else if (this.dirY !== 0 && newDirY === 0) {
+                this.dirX = newDirX;
+                this.dirY = newDirY;
+            }
+        }
+
+        move() {
+            const head = this.getHead();
+            const newHead = new Point(head.x + this.dirX, head.y + this.dirY);
+            this.body.unshift(newHead);
+        }
+
+        trimTail() {
+            this.body.pop();
+        }
+
+        checkCollision() {
+            const head = this.getHead();
+            if (head.x < 0 || head.x >= WIDTH || head.y < 0 || head.y >= HEIGHT) {
+                return true;
+            }
+            for (let i = 1; i < this.body.length; i++) {
+                if (head.equals(this.body[i])) {
+                    return true;
                 }
             }
+            return false;
+        }
+    }
 
-            class Snake {
-                constructor(body, dirX, dirY) {
-                    this.body = body;
-                    this.dirX = dirX;
-                    this.dirY = dirY;
-                }
+    class GameBoard {
+        constructor(w, h) {
+            this.width = w;
+            this.height = h;
+            this.food = null;
+        }
 
-                getHead() {
-                    return this.body[0];
-                }
-
-                changeDirection(newDirX, newDirY) {
-                    // FIXED: This allows vertical direction changes while preserving 180-degree blocking mechanics
-                    if (this.dirX !== 0 && newDirX === 0) {
-                        this.dirX = newDirX;
-                        this.dirY = newDirY;
-                    } else if (this.dirY !== 0 && newDirY === 0) {
-                        this.dirX = newDirX;
-                        this.dirY = newDirY;
-                    }
-                }
-
-                move() {
-                    const head = this.getHead();
-                    const newHead = new Point(head.x + this.dirX, head.y + this.dirY);
-                    this.body.unshift(newHead);
-                }
-
-                trimTail() {
-                    this.body.pop();
-                }
-
-                checkCollision() {
-                    const head = this.getHead();
-                    if (head.x < 0 || head.x >= WIDTH || head.y < 0 || head.y >= HEIGHT) {
-                        return true;
-                    }
-                    for (let i = 1; i < this.body.length; i++) {
-                        if (head.equals(this.body[i])) {
-                            return true;
-                        }
-                    }
-                    return false;
+        spawnFood(snake) {
+            const x = Math.floor(Math.random() * (this.width - 2)) + 1;
+            const y = Math.floor(Math.random() * (this.height - 2)) + 1;
+            for (let p of snake.body) {
+                if (p.x === x && p.y === y) {
+                    this.spawnFood(snake);
+                    return;
                 }
             }
+            this.food = new Point(x, y);
+        }
 
-            class GameBoard {
-                constructor(w, h) {
-                    this.width = w;
-                    this.height = h;
-                    this.food = null;
-                }
+        outOfBoundsCheck(snake) {
+            const head = snake.getHead();
+            return (head.x <= 0 || head.x >= this.width - 1 || head.y <= 0 || head.y >= this.height - 1);
+        }
 
-                spawnFood(snake) {
-                    const x = Math.floor(Math.random() * (this.width - 2)) + 1;
-                    const y = Math.floor(Math.random() * (this.height - 2)) + 1;
-                    for (let p of snake.body) {
-                        if (p.x === x && p.y === y) {
-                            this.spawnFood(snake);
-                            return;
-                        }
-                    }
-                    this.food = new Point(x, y);
-                }
-
-                outOfBoundsCheck(snake) {
-                    const head = snake.getHead();
-                    return (head.x <= 0 || head.x >= this.width - 1 || head.y <= 0 || head.y >= this.height - 1);
-                }
-
-                drawScreen(snake) {
-                    let screenStr = "";
-                    for (let y = 0; y < this.height; y++) {
-                        for (let x = 0; x < this.width; x++) {
-                            if (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) {
-                                screenStr += WALL_CHAR;
-                            } else if (x === snake.getHead().x && y === snake.getHead().y) {
-                                screenStr += SNAKE_HEAD_CHAR;
-                            } else if (this.food && x === this.food.x && y === this.food.y) {
-                                // FIXED: Added missing statement to physically render food characters (*) onto the map
-                                screenStr += FOOD_CHAR;
-                            } else {
-                                let isBodyPart = false;
-                                for (let i = 1; i < snake.body.length; i++) {
-                                    if (x === snake.body[i].x && y === snake.body[i].y) {
-                                        isBodyPart = true;
-                                        break;
-                                    }
-                                }
-                                screenStr += isBodyPart ? SNAKE_BODY_CHAR : EMPTY_CHAR;
+        drawScreen(snake) {
+            let screenStr = "";
+            for (let y = 0; y < this.height; y++) {
+                for (let x = 0; x < this.width; x++) {
+                    if (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) {
+                        screenStr += WALL_CHAR;
+                    } else if (x === snake.getHead().x && y === snake.getHead().y) {
+                        screenStr += SNAKE_HEAD_CHAR;
+                    } else if (this.food && x === this.food.x && y === this.food.y) {
+                        screenStr += FOOD_CHAR;
+                    } else {
+                        let isBodyPart = false;
+                        for (let i = 1; i < snake.body.length; i++) {
+                            if (x === snake.body[i].x && y === snake.body[i].y) {
+                                isBodyPart = true;
+                                break;
                             }
                         }
-                        screenStr += "\n";
+                        screenStr += isBodyPart ? SNAKE_BODY_CHAR : EMPTY_CHAR;
                     }
-                    document.getElementById("terminal").textContent = screenStr;
                 }
+                screenStr += "\n";
             }
+            document.getElementById("terminal").textContent = screenStr;
+        }
+    }
 
-            class GameEngine {
-                constructor(board, snake) {
-                    this.board = board;
-                    this.snake = snake;
-                    this.score = 0;
-                    this.isOver = false;
+    class GameEngine {
+        constructor(board, snake) {
+            this.board = board;
+            this.snake = snake;
+            this.score = 0;
+            this.isOver = false;
+            this.inputQueue = []; // FIXED: Stores rapid inputs in a sequence
+        }
+
+        startGameLoop() {
+            window.addEventListener("keydown", (e) => {
+                const key = e.key.toLowerCase(); 
+                if (["w", "s", "a", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) {
+                    e.preventDefault();
+                }                    
+                
+                // Add the keystroke to our queue immediately, but limit it to 2 pending keys max
+                if (this.inputQueue.length < 2) {
+                    this.inputQueue.push(key);
+                }
+            });
+
+            this.board.drawScreen(this.snake);
+
+            this.gameInterval = setInterval(() => {
+                if (this.isOver) return;
+
+                // FIXED: Process the next key sitting in our queue right before calculating movement
+                if (this.inputQueue.length > 0) {
+                    const nextKey = this.inputQueue.shift();
+                    if (nextKey === 'w' || nextKey === 'arrowup') this.snake.changeDirection(0, -1);
+                    if (nextKey === 's' || nextKey === 'arrowdown') this.snake.changeDirection(0, 1);
+                    if (nextKey === 'a' || nextKey === 'arrowleft') this.snake.changeDirection(-1, 0);
+                    if (nextKey === 'd' || nextKey === 'arrowright') this.snake.changeDirection(1, 0);
                 }
 
-                startGameLoop() {
-                    window.addEventListener("keydown", (e) => {
-                        const key = e.key.toLowerCase(); 
-                        if (["w", "s", "a", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) {
-                            e.preventDefault();
-                        }                    
-                        if (key === 'w' || key === 'arrowup') this.snake.changeDirection(0, -1);
-                        if (key === 's' || key === 'arrowdown') this.snake.changeDirection(0, 1);
-                        if (key === 'a' || key === 'arrowleft') this.snake.changeDirection(-1, 0);
-                        if (key === 'd' || key === 'arrowright') this.snake.changeDirection(1, 0);
-                    });
+                this.snake.move();
 
-                    // Render instantly upon initialization so the terminal canvas isn't blank for 200ms
-                    this.board.drawScreen(this.snake);
-
-                    this.gameInterval = setInterval(() => {
-                        if (this.isOver) return;
-                        this.snake.move();
-
-                        if (this.snake.getHead().equals(this.board.food)) {
-                            this.score += 10;
-                            this.board.spawnFood(this.snake);
-                            // FIXED: Replaced standard string syntax with template literal literals (``) so score variables update dynamically
-                            document.getElementById("scoreboard").textContent = `Score: ${this.score} [Controls: W/A/S/D or Arrows]`;
-                        } else {
-                            this.snake.trimTail();
-                        }
-
-                        if (this.snake.checkCollision() || this.board.outOfBoundsCheck(this.snake)) {
-                            this.isOver = true;
-                            clearInterval(this.gameInterval);
-                            document.getElementById("terminal").textContent = "=================================\n   GAME OVER! HIT A WALL/TAIL    \n=================================";
-                            return;
-                        }
-                        this.board.drawScreen(this.snake);
-                    }, 200);
+                if (this.snake.getHead().equals(this.board.food)) {
+                    this.score += 10;
+                    this.board.spawnFood(this.snake);
+                    document.getElementById("scoreboard").textContent = `Score: ${this.score} [Controls: W/A/S/D or Arrows]`;
+                } else {
+                    this.snake.trimTail();
                 }
-            }
 
-            // Initialization Block (Fixed trailing cutoff code)
-            const initialBody = [new Point(5, 5), new Point(4, 5), new Point(3, 5)];
-            const snake = new Snake(initialBody, 1, 0);
-            const board = new GameBoard(WIDTH, HEIGHT);
-            board.spawnFood(snake);
+                if (this.snake.checkCollision() || this.board.outOfBoundsCheck(this.snake)) {
+                    this.isOver = true;
+                    clearInterval(this.gameInterval);
+                    document.getElementById("terminal").textContent = "=================================\n   GAME OVER! HIT A WALL/TAIL    \n=================================";
+                    return;
+                }
+                this.board.drawScreen(this.snake);
+            }, 160); // OPTIMIZATION: Sped up game tick slightly from 200ms to 160ms for punchier arcade gameplay
+        }
+    }
 
-            const engine = new GameEngine(board, snake);
-            engine.startGameLoop();
-        </script>
+    const initialBody = [new Point(5, 5), new Point(4, 5), new Point(3, 5)];
+    const snake = new Snake(initialBody, 1, 0);
+    const board = new GameBoard(WIDTH, HEIGHT);
+    board.spawnFood(snake);
+
+    const engine = new GameEngine(board, snake);
+    engine.startGameLoop();
+</script>
     </body>
 </html>
