@@ -1,3 +1,3 @@
 # snake-arcade-game-
 This is a quick and fun game to play whenever you are bored, so you have something to do as you wait! The arcade-like colors bring back nostalgic memories and the simple interactive surface makes it easy to use. 
-This was my first game that I created, as I usually only make websites, so it was very interesting to learn about directions and how to implement this in html, as well as being able to make the snake move in the terminal. IN addition to the direction, it was also learning how to implement it in the HTML, and that was new territory that took me a while to conquer. 
+This was my first game that I created, as I usually only make websites, so it was very interesting to learn about directions and how to implement this in html, as well as being able to make the snake move in the terminal. In addition to the direction, it was also learning how to implement it in the HTML, and that was new territory that took me a while to conquer. 
